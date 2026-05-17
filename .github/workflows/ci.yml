@@ -109,10 +109,15 @@ jobs:
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
         run: |
+          test -n "$EC2_HOST" || (echo "Missing EC2_HOST secret" && exit 1)
           test -n "$EC2_USER" || (echo "Missing EC2_USER secret" && exit 1)
+          case "$EC2_HOST" in -*) echo "Invalid EC2_HOST secret" && exit 1 ;; esac
+          case "$EC2_USER" in -*) echo "Invalid EC2_USER secret" && exit 1 ;; esac
           APP_DIR="${EC2_APP_DIR:-/home/$EC2_USER/user-service}"
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2_key "$EC2_USER@$EC2_HOST" "mkdir -p '$APP_DIR'"
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/ec2_key build/libs/app.jar "$EC2_USER@$EC2_HOST:$APP_DIR/app.jar"
+          case "$APP_DIR" in /*) ;; *) echo "EC2_APP_DIR must be an absolute path" && exit 1 ;; esac
+          case "$APP_DIR" in *"'"*) echo "EC2_APP_DIR cannot contain single quotes" && exit 1 ;; esac
+          ssh -o StrictHostKeyChecking=no -o User="$EC2_USER" -i ~/.ssh/ec2_key "$EC2_HOST" "mkdir -p '$APP_DIR'"
+          scp -o StrictHostKeyChecking=no -o User="$EC2_USER" -i ~/.ssh/ec2_key build/libs/app.jar "$EC2_HOST:$APP_DIR/app.jar"
 
       - name: Restart application
         env:
@@ -122,8 +127,14 @@ jobs:
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_PASS: ${{ secrets.DB_PASS }}
         run: |
+          test -n "$EC2_HOST" || (echo "Missing EC2_HOST secret" && exit 1)
+          test -n "$EC2_USER" || (echo "Missing EC2_USER secret" && exit 1)
           test -n "$DB_HOST" || (echo "Missing DB_HOST secret" && exit 1)
           test -n "$DB_PASS" || (echo "Missing DB_PASS secret" && exit 1)
+          case "$EC2_HOST" in -*) echo "Invalid EC2_HOST secret" && exit 1 ;; esac
+          case "$EC2_USER" in -*) echo "Invalid EC2_USER secret" && exit 1 ;; esac
           APP_DIR="${EC2_APP_DIR:-/home/$EC2_USER/user-service}"
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2_key "$EC2_USER@$EC2_HOST" "cd '$APP_DIR' && pkill -f 'java -jar app.jar' || true"
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2_key "$EC2_USER@$EC2_HOST" "cd '$APP_DIR' && nohup env SERVER_PORT='8080' SPRING_DATASOURCE_URL='jdbc:postgresql://$DB_HOST:5432/userdb' SPRING_DATASOURCE_USERNAME='postgres' SPRING_DATASOURCE_PASSWORD='$DB_PASS' java -jar app.jar > app.log 2>&1 < /dev/null &"
+          case "$APP_DIR" in /*) ;; *) echo "EC2_APP_DIR must be an absolute path" && exit 1 ;; esac
+          case "$APP_DIR" in *"'"*) echo "EC2_APP_DIR cannot contain single quotes" && exit 1 ;; esac
+          ssh -o StrictHostKeyChecking=no -o User="$EC2_USER" -i ~/.ssh/ec2_key "$EC2_HOST" "cd '$APP_DIR' && pkill -f 'java -jar app.jar' || true"
+          ssh -o StrictHostKeyChecking=no -o User="$EC2_USER" -i ~/.ssh/ec2_key "$EC2_HOST" "cd '$APP_DIR' && nohup env SERVER_PORT='8080' SPRING_DATASOURCE_URL='jdbc:postgresql://$DB_HOST:5432/userdb' SPRING_DATASOURCE_USERNAME='postgres' SPRING_DATASOURCE_PASSWORD='$DB_PASS' java -jar app.jar > app.log 2>&1 < /dev/null &"
