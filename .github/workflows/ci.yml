@@ -101,7 +101,7 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/ec2_key
           chmod 600 ~/.ssh/ec2_key
-          ssh-keyscan -T 30 -H "$EC2_HOST" >> ~/.ssh/known_hosts
+          ssh-keyscan -T 60 -H "$EC2_HOST" >> ~/.ssh/known_hosts || true
 
       - name: Copy jar to EC2
         env:
@@ -111,8 +111,8 @@ jobs:
         run: |
           test -n "$EC2_USER" || (echo "Missing EC2_USER secret" && exit 1)
           APP_DIR="${EC2_APP_DIR:-/home/$EC2_USER/user-service}"
-          ssh -i ~/.ssh/ec2_key "$EC2_USER@$EC2_HOST" "mkdir -p '$APP_DIR'"
-          scp -i ~/.ssh/ec2_key build/libs/app.jar "$EC2_USER@$EC2_HOST:$APP_DIR/app.jar"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2_key "$EC2_USER@$EC2_HOST" "mkdir -p '$APP_DIR'"
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/ec2_key build/libs/app.jar "$EC2_USER@$EC2_HOST:$APP_DIR/app.jar"
 
       - name: Restart application
         env:
@@ -125,5 +125,5 @@ jobs:
           test -n "$DB_HOST" || (echo "Missing DB_HOST secret" && exit 1)
           test -n "$DB_PASS" || (echo "Missing DB_PASS secret" && exit 1)
           APP_DIR="${EC2_APP_DIR:-/home/$EC2_USER/user-service}"
-          ssh -i ~/.ssh/ec2_key "$EC2_USER@$EC2_HOST" "cd '$APP_DIR' && pkill -f 'java -jar app.jar' || true"
-          ssh -i ~/.ssh/ec2_key "$EC2_USER@$EC2_HOST" "cd '$APP_DIR' && nohup env SERVER_PORT='8080' SPRING_DATASOURCE_URL='jdbc:postgresql://$DB_HOST:5432/userdb' SPRING_DATASOURCE_USERNAME='postgres' SPRING_DATASOURCE_PASSWORD='$DB_PASS' java -jar app.jar > app.log 2>&1 < /dev/null &"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2_key "$EC2_USER@$EC2_HOST" "cd '$APP_DIR' && pkill -f 'java -jar app.jar' || true"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2_key "$EC2_USER@$EC2_HOST" "cd '$APP_DIR' && nohup env SERVER_PORT='8080' SPRING_DATASOURCE_URL='jdbc:postgresql://$DB_HOST:5432/userdb' SPRING_DATASOURCE_USERNAME='postgres' SPRING_DATASOURCE_PASSWORD='$DB_PASS' java -jar app.jar > app.log 2>&1 < /dev/null &"
