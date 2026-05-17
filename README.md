@@ -25,5 +25,10 @@ Configurar estos secretos en GitHub: `Settings > Secrets and variables > Actions
 - `EC2_USER`: usuario SSH del EC2, por ejemplo `ubuntu` o `ec2-user`.
 - `EC2_SSH_KEY`: llave privada SSH con acceso al EC2.
 - `EC2_APP_DIR`: ruta de despliegue, por ejemplo `/home/ubuntu/user-service`.
+- `DB_HOST`: host de Amazon RDS PostgreSQL.
+- `DB_PASS`: password de la base de datos.
+
+El deploy usa PostgreSQL en el puerto `5432`, base de datos `userdb`, usuario `postgres`
+y expone la aplicacion en el puerto `8080`.
 
 El EC2 debe tener Java 25 instalado y el puerto `8080` habilitado en el security group.

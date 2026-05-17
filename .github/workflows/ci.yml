@@ -106,6 +106,8 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PASS: ${{ secrets.DB_PASS }}
         run: |
           ssh -i ~/.ssh/ec2_key "$EC2_USER@$EC2_HOST" "cd '$EC2_APP_DIR' && pkill -f 'java -jar app.jar' || true"
-          ssh -i ~/.ssh/ec2_key "$EC2_USER@$EC2_HOST" "cd '$EC2_APP_DIR' && nohup java -jar app.jar > app.log 2>&1 < /dev/null &"
+          ssh -i ~/.ssh/ec2_key "$EC2_USER@$EC2_HOST" "cd '$EC2_APP_DIR' && nohup env SERVER_PORT='8080' SPRING_DATASOURCE_URL='jdbc:postgresql://$DB_HOST:5432/userdb' SPRING_DATASOURCE_USERNAME='postgres' SPRING_DATASOURCE_PASSWORD='$DB_PASS' java -jar app.jar > app.log 2>&1 < /dev/null &"
