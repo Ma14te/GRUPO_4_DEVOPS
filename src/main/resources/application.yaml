@@ -8,10 +8,3 @@ spring:
 logging:
   pattern:
     level: "%5p [%X{correlationId}]"
-spring:
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
