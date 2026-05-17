@@ -1,15 +1,7 @@
-name: user-service-compose
-
-networks:
-  user-service-net:
-    driver: bridge
-
-
 services:
   postgres:
-    image: mi-postgres:latest
-    networks:
-      - user-service-net
+    image: postgres:17-alpine
+    container_name: user-service-postgres
     environment:
       POSTGRES_DB: userservice
       POSTGRES_USER: userservice
@@ -19,15 +11,23 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U userservice -d userservice"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 5
-  
+      start_period: 10s
+
   user-service:
-    image: user-service:latest
-    networks:
-      - user-service-net
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: user-service:local
+    container_name: user-service-api
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/userservice
+      SPRING_DATASOURCE_USERNAME: userservice
+      SPRING_DATASOURCE_PASSWORD: userservice
     ports:
       - "8080:8080"
     depends_on:
