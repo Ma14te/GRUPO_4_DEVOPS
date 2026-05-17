@@ -115,6 +115,10 @@ jobs:
           ssh -o StrictHostKeyChecking=no -o User="$EC2_USER" -i ~/.ssh/ec2_key "$EC2_HOST" "mkdir -p '$EC2_APP_DIR'"
           scp -o StrictHostKeyChecking=no -o User="$EC2_USER" -i ~/.ssh/ec2_key build/libs/app.jar "$EC2_HOST:$EC2_APP_DIR/app.jar"
 
+      - name: Ensure Java on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -o User="$EC2_USER" -i ~/.ssh/ec2_key "$EC2_HOST" "if ! command -v java >/dev/null 2>&1; then sudo yum install -y java-25-amazon-corretto-headless; fi; java -version"
+
       - name: Restart application
         env:
           DB_PASS: ${{ secrets.DB_PASS }}
