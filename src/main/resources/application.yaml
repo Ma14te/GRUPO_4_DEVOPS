@@ -1,9 +1,18 @@
 spring:
   application:
     name: user-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://grupo-4-rds.ct8iogk44c9s.us-east-2.rds.amazonaws.com:5432/userdb}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
   jackson:
     deserialization:
       fail-on-unknown-properties: false
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
 
 logging:
   pattern:

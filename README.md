@@ -9,6 +9,13 @@ Servicio de registro de usuarios construido con Java 25, Spring Boot y Gradle.
 ./gradlew bootRun
 ```
 
+## Persistencia
+
+La aplicacion persiste usuarios en PostgreSQL usando Spring Data JPA. En EC2 se conecta a
+Amazon RDS con las variables de entorno enviadas desde `.github/workflows/ci.yml`.
+
+La tabla se crea automaticamente con Hibernate (`ddl-auto=update`) en la base `userdb`.
+
 ## CI/CD
 
 El flujo de GitHub Actions se encuentra en `.github/workflows/ci.yml` y ejecuta:
@@ -22,8 +29,7 @@ El flujo de GitHub Actions se encuentra en `.github/workflows/ci.yml` y ejecuta:
 Configurar estos secretos en GitHub: `Settings > Secrets and variables > Actions`.
 
 - `EC2_SSH_KEY`: llave privada SSH con acceso al EC2.
-- `DB_PASS`: password de la base de datos. Es opcional para la version actual en memoria,
-  pero se usa como variable de entorno si esta configurado.
+- `DB_PASS`: password de la base de datos PostgreSQL.
 
 El deploy usa estos valores fijos en `.github/workflows/ci.yml`:
 
