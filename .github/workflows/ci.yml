@@ -124,8 +124,32 @@ jobs:
           DB_PASS: ${{ secrets.DB_PASS }}
         run: |
           DB_URL="jdbc:postgresql://$DB_HOST:5432/$DB_NAME"
-          DB_URL_ESCAPED=$(printf '%q' "$DB_URL")
-          DB_USER_ESCAPED=$(printf '%q' "$DB_USER")
-          DB_PASS_ESCAPED=$(printf '%q' "${DB_PASS:-}")
-          ssh -o StrictHostKeyChecking=no -o User="$EC2_USER" -i ~/.ssh/ec2_key "$EC2_HOST" "cd '$EC2_APP_DIR' && pkill -f '[j]ava -jar app.jar' || true"
-          ssh -o StrictHostKeyChecking=no -o User="$EC2_USER" -i ~/.ssh/ec2_key "$EC2_HOST" "cd '$EC2_APP_DIR' && nohup env SERVER_PORT='8080' SPRING_DATASOURCE_URL=$DB_URL_ESCAPED SPRING_DATASOURCE_USERNAME=$DB_USER_ESCAPED SPRING_DATASOURCE_PASSWORD=$DB_PASS_ESCAPED java -jar app.jar > app.log 2>&1 < /dev/null &"
+          cat > user-service.env <<EOF
+          SERVER_PORT=8080
+          SPRING_DATASOURCE_URL=$DB_URL
+          SPRING_DATASOURCE_USERNAME=$DB_USER
+          SPRING_DATASOURCE_PASSWORD=${DB_PASS:-}
+          EOF
+          cat > user-service.service <<EOF
+          [Unit]
+          Description=User Service Spring Boot API
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=simple
+          User=$EC2_USER
+          WorkingDirectory=$EC2_APP_DIR
+          EnvironmentFile=$EC2_APP_DIR/user-service.env
+          ExecStart=/usr/bin/java -jar $EC2_APP_DIR/app.jar
+          Restart=always
+          RestartSec=10
+          StandardOutput=append:$EC2_APP_DIR/app.log
+          StandardError=append:$EC2_APP_DIR/app.log
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+          scp -o StrictHostKeyChecking=no -o User="$EC2_USER" -i ~/.ssh/ec2_key user-service.env "$EC2_HOST:$EC2_APP_DIR/user-service.env"
+          scp -o StrictHostKeyChecking=no -o User="$EC2_USER" -i ~/.ssh/ec2_key user-service.service "$EC2_HOST:/tmp/user-service.service"
+          ssh -o StrictHostKeyChecking=no -o User="$EC2_USER" -i ~/.ssh/ec2_key "$EC2_HOST" "chmod 600 '$EC2_APP_DIR/user-service.env' && sudo mv /tmp/user-service.service /etc/systemd/system/user-service.service && sudo systemctl daemon-reload && sudo systemctl enable user-service && sudo systemctl restart user-service && sleep 10 && sudo systemctl --no-pager --full status user-service"
